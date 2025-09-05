@@ -205,7 +205,7 @@ security = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
     Get current user from JWT token
-    
+
     For now, returns a mock user. In production, this should:
     1. Verify JWT token
     2. Get user from database

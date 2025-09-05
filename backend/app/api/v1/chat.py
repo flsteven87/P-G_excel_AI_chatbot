@@ -192,7 +192,7 @@ async def execute_direct_query(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        )
+        ) from e
 
 
 @router.websocket("/ws/{session_id}")
@@ -208,7 +208,7 @@ async def websocket_chat(
         user_id = token_data["sub"]
 
         # Validate session access
-        session = await chat_service.get_chat_session(session_id, user_id)
+        await chat_service.get_chat_session(session_id, user_id)
 
         # Connect WebSocket
         await manager.connect(websocket, user_id, session_id)
@@ -307,7 +307,7 @@ async def get_vanna_status(current_user: User = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get service status: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/vanna/ask")
@@ -350,7 +350,7 @@ async def ask_vanna_direct(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Query processing failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/vanna/train/ddl")
@@ -388,7 +388,7 @@ async def train_vanna_with_ddl(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Training failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/vanna/train/documentation")
@@ -425,7 +425,7 @@ async def train_vanna_with_docs(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Training failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/vanna/train/sql")
@@ -463,7 +463,7 @@ async def train_vanna_with_sql(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Training failed: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/sessions/{session_id}/export")
@@ -504,4 +504,4 @@ async def export_chat_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to export chat session"
-        )
+        ) from e

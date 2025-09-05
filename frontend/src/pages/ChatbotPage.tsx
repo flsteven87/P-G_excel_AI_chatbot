@@ -39,13 +39,11 @@ export function ChatbotPage() {
     .filter(m => m.type === 'assistant' && m.sql && m.results)
     .slice(-1)[0]
 
-  const handleExportResults = (format: 'csv' | 'excel' | 'json') => {
-    console.log(`Export results as ${format}`)
+  const handleExportResults = () => {
     // TODO: 實作匯出邏輯
   }
 
-  const handleCreateChart = (chartType: string) => {
-    console.log(`Create chart: ${chartType}`)
+  const handleCreateChart = () => {
     // TODO: 實作圖表創建邏輯
   }
 
@@ -53,9 +51,8 @@ export function ChatbotPage() {
     await navigator.clipboard.writeText(sql)
   }
 
-  const handleSelectDataset = (datasetId: string) => {
-    console.log(`Selected dataset: ${datasetId}`)
-    // TODO: 實作數據集選擇邏輯
+  const handleSelectDataset = () => {
+    // TODO: 實作數據集選擇邏輯  
   }
 
   const handleToggleFullscreen = () => {
@@ -69,12 +66,7 @@ export function ChatbotPage() {
   // 鍵盤快捷鍵提示
   useEffect(() => {
     const showKeyboardShortcuts = () => {
-      console.log('Keyboard shortcuts:', {
-        'Ctrl+Shift+H': 'Toggle chat history',
-        'Ctrl+Shift+D': 'Toggle query details', 
-        'Ctrl+Shift+B': 'Toggle sidebar',
-        'Ctrl+Shift+F': 'Toggle fullscreen mode'
-      })
+      // Keyboard shortcuts for future implementation
     }
 
     // 只在開發模式顯示
@@ -194,7 +186,7 @@ export function ChatbotPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleExportResults('csv')}
+              onClick={() => handleExportResults()}
               className="text-xs"
             >
               匯出 CSV

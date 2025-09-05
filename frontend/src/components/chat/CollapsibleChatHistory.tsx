@@ -263,6 +263,7 @@ interface SessionCardProps {
   onTogglePin: (e: React.MouseEvent) => void
   onDelete: (e: React.MouseEvent) => void
   onExport: (e: React.MouseEvent) => void
+  formatDate: (dateString: string) => string
 }
 
 function SessionCard({
@@ -273,6 +274,7 @@ function SessionCard({
   onTogglePin,
   onDelete,
   onExport,
+  formatDate,
 }: SessionCardProps) {
   const [showActions, setShowActions] = useState(false)
 
@@ -300,7 +302,7 @@ function SessionCard({
         
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
-            {formatRelativeTime(session.updated_at)}
+            {formatDate(session.updated_at)}
           </span>
           <Badge variant="outline" className="text-xs">
             {session.message_count} 則
