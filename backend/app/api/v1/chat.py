@@ -15,6 +15,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from ...core.security import security_manager
 from ...models.chat import (
@@ -29,11 +30,17 @@ from ...models.user import User
 from ...services.chat_service import chat_service
 from ...services.query_service import query_service
 from ...services.vanna_service import vanna_service
+from ...services.vanna_training import vanna_training_service
 from ..dependencies import check_rate_limit, get_current_user, validate_session_access
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+
+class VannaAskRequest(BaseModel):
+    """Request model for vanna.ai ask endpoint"""
+    question: str
 
 
 class ConnectionManager:
@@ -312,11 +319,12 @@ async def get_vanna_status(current_user: User = Depends(get_current_user)):
 
 @router.post("/vanna/ask")
 async def ask_vanna_direct(
-    question: str,
+    request: VannaAskRequest,
     current_user: User = Depends(get_current_user),
     _: None = Depends(check_rate_limit)
 ):
     """Direct interaction with vanna.ai - ask question and get SQL + results."""
+    question = request.question
     if not question or len(question.strip()) < 3:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -463,6 +471,38 @@ async def train_vanna_with_sql(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Training failed: {str(e)}"
+        ) from e
+
+
+@router.post("/vanna/initialize")
+async def initialize_vanna_training(
+    current_user: User = Depends(get_current_user)
+):
+    """初始化 vanna.ai 訓練資料 - 使用庫存資料模型"""
+    try:
+        success = await vanna_training_service.initialize_training()
+
+        if success:
+            # 檢查訓練狀態
+            status_info = await vanna_service.get_training_data_summary()
+
+            return {
+                "message": "vanna.ai 訓練資料初始化完成",
+                "status": "success",
+                "training_data_count": status_info.get("training_data_count", 0),
+                "initialized_at": datetime.utcnow().isoformat()
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="訓練初始化失敗"
+            )
+
+    except Exception as e:
+        logger.error(f"Vanna training initialization failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"訓練初始化失敗: {str(e)}"
         ) from e
 
 
