@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileSpreadsheet, Upload, RefreshCw, Plus, Database } from 'lucide-react'
+import { FileSpreadsheet, Upload, RefreshCw, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -35,15 +35,11 @@ export function ExcelPage() {
   const handleCancelJob = async (jobId: string) => {
     try {
       await cancelJob(jobId)
-    } catch (error) {
+    } catch {
+      // Error handled by hook
     }
   }
 
-  const completedFiles = state.files.filter(file => 
-    file.sheets.some(sheet => sheet.etl_status === 'loaded')
-  ).length
-
-  const totalETLJobs = Object.keys(state.etlJobs).length
   const runningJobs = Object.values(state.etlJobs).filter(job => 
     job.status === 'processing' || job.status === 'pending'
   ).length
@@ -62,44 +58,6 @@ export function ExcelPage() {
         }
       />
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-            <div className="text-2xl font-bold">{state.files.length}</div>
-            <div className="text-sm text-muted-foreground">已上傳檔案</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Database className="h-8 w-8 mx-auto mb-2 text-green-600" />
-            <div className="text-2xl font-bold">{completedFiles}</div>
-            <div className="text-sm text-muted-foreground">已載入檔案</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="h-8 w-8 mx-auto mb-2 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-              <span className="text-purple-600 font-bold text-sm">ETL</span>
-            </div>
-            <div className="text-2xl font-bold">{totalETLJobs}</div>
-            <div className="text-sm text-muted-foreground">ETL 作業總數</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="h-8 w-8 mx-auto mb-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <div className="h-3 w-3 bg-yellow-600 rounded-full animate-pulse" />
-            </div>
-            <div className="text-2xl font-bold">{runningJobs}</div>
-            <div className="text-sm text-muted-foreground">進行中作業</div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Error Display */}
       {state.error && (

@@ -134,12 +134,12 @@ export function CollapsibleChatHistory({
   }
 
   return (
-    <div className={cn('flex flex-col h-full bg-background border-r border-border w-80', className)}>
+    <div className={cn('flex flex-col h-full bg-background border-r border-border w-full min-w-0', className)}>
       {/* Header */}
-      <div className="p-4 border-b border-border space-y-4">
+      <div className="p-3 sm:p-4 border-b border-border space-y-3 sm:space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">聊天記錄</h2>
-          <div className="flex items-center space-x-1">
+          <h2 className="text-base sm:text-lg font-semibold truncate">聊天記錄</h2>
+          <div className="flex items-center space-x-1 flex-shrink-0">
             <Button onClick={onNewChat} size="sm" variant="ghost" className="h-8 w-8 p-0">
               <Plus className="h-4 w-4" />
             </Button>
@@ -159,10 +159,10 @@ export function CollapsibleChatHistory({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="搜尋聊天記錄..."
+            placeholder="搜尋..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9"
+            className="pl-9 h-9 text-sm"
           />
         </div>
       </div>
@@ -292,26 +292,27 @@ function SessionCard({
       <div className="space-y-2">
         <div className="flex items-start justify-between">
           <h3 className={cn(
-            'text-sm font-medium truncate flex-1',
+            'text-sm font-medium truncate flex-1 pr-2',
             isActive ? 'text-foreground' : 'text-foreground/80'
           )}>
             {session.title}
           </h3>
-          {isPinned && <Pin className="h-3 w-3 text-muted-foreground ml-1" />}
+          {isPinned && <Pin className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
         </div>
         
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
+        <div className="flex items-center justify-between text-xs gap-2">
+          <span className="text-muted-foreground truncate flex-1">
             {formatDate(session.updated_at)}
           </span>
-          <Badge variant="outline" className="text-xs">
-            {session.message_count} 則
+          <Badge variant="outline" className="text-xs flex-shrink-0">
+            <span className="hidden sm:inline">{session.message_count} 則</span>
+            <span className="sm:hidden">{session.message_count}</span>
           </Badge>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Adaptive based on container width */}
         {showActions && (
-          <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 backdrop-blur rounded p-1">
+          <div className="absolute top-1 right-1 sm:top-2 sm:right-2 flex items-center space-x-1 bg-background/90 backdrop-blur rounded p-1">
             <Button
               variant="ghost"
               size="sm"

@@ -11,82 +11,9 @@ export interface ChatState {
   error: string | null
 }
 
-// Mock data for demonstration
-const MOCK_SESSIONS: ChatSession[] = [
-  {
-    id: 'session-1',
-    title: '庫存分析對話',
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    message_count: 8,
-    is_active: true
-  },
-  {
-    id: 'session-2', 
-    title: '銷售趨勢查詢',
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    message_count: 12,
-    is_active: true
-  },
-  {
-    id: 'session-3',
-    title: '品牌績效分析', 
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    message_count: 6,
-    is_active: true
-  }
-]
-
-const MOCK_MESSAGES: Record<string, ChatMessage[]> = {
-  'session-1': [
-    {
-      id: 'msg-1',
-      session_id: 'session-1',
-      type: 'user',
-      content: '顯示庫存量前10的產品',
-      timestamp: new Date(Date.now() - 60 * 60 * 1000)
-    },
-    {
-      id: 'msg-2',
-      session_id: 'session-1', 
-      type: 'assistant',
-      content: '我為您查詢了庫存量前10的產品，以下是結果：',
-      timestamp: new Date(Date.now() - 59 * 60 * 1000),
-      sql: `SELECT 
-  dp.sku, 
-  dp.descr, 
-  dp.brand_name, 
-  SUM(f.qty) as total_qty
-FROM vw_inventory_latest f
-JOIN dim_product dp ON dp.product_id = f.product_id
-GROUP BY dp.sku, dp.descr, dp.brand_name
-ORDER BY total_qty DESC
-LIMIT 10;`,
-      results: {
-        data: [
-          { sku: 'TW001', descr: '產品 A', brand_name: 'Brand A', total_qty: 15420 },
-          { sku: 'TW002', descr: '產品 B', brand_name: 'Brand B', total_qty: 12850 },
-          { sku: 'TW003', descr: '產品 C', brand_name: 'Brand A', total_qty: 9760 },
-          { sku: 'TW004', descr: '產品 D', brand_name: 'Brand C', total_qty: 8340 },
-          { sku: 'TW005', descr: '產品 E', brand_name: 'Brand B', total_qty: 7220 }
-        ],
-        columns: ['sku', 'descr', 'brand_name', 'total_qty'],
-        row_count: 10,
-        execution_time_ms: 245,
-        chart_type: 'bar'
-      },
-      status: 'completed',
-      metadata: {
-        processing_time: 1240,
-        row_count: 10,
-        chart_suggestion: '建議使用柱狀圖顯示數量比較',
-        suggested_visualizations: ['柱狀圖適合比較不同產品的庫存量', '可以按品牌分組顯示']
-      }
-    }
-  ]
-}
+// Real-time sessions and messages loaded from API
+const INITIAL_SESSIONS: ChatSession[] = []
+const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {}
 
 const SUGGESTED_QUESTIONS = [
   '顯示庫存量前10的產品',
@@ -103,9 +30,9 @@ const SUGGESTED_QUESTIONS = [
 
 export function useChat() {
   const [state, setState] = useState<ChatState>({
-    sessions: MOCK_SESSIONS,
+    sessions: INITIAL_SESSIONS,
     currentSession: null,
-    messages: MOCK_MESSAGES,
+    messages: INITIAL_MESSAGES,
     availableDatasets: [],
     selectedDataset: null,
     isProcessing: false,
@@ -170,8 +97,8 @@ export function useChat() {
     }))
 
     try {
-      // 實際調用後端 API (後端運行在 8001 端口)
-      const response = await fetch('http://localhost:8001/api/v1/chat/vanna/ask', {
+      // 調用後端 API (使用 Vite 代理)
+      const response = await fetch('/api/v1/chat/vanna/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

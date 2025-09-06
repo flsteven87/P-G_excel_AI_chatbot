@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { CollapsibleSidebar } from '@/components/layout/CollapsibleSidebar'
 import { CollapsibleChatHistory } from '@/components/chat/CollapsibleChatHistory'
 import { ChatInterface } from '@/components/chat/ChatInterface'
 import { CollapsibleQueryDetails } from '@/components/chat/CollapsibleQueryDetails'
 import { DatasetSelector } from '@/components/chat/DatasetSelector'
 import { ChatToolbar } from '@/components/chat/ChatToolbar'
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
+import type { ImperativePanelHandle } from 'react-resizable-panels'
 import { useChat } from '@/hooks/useChat'
 import { useChatLayout } from '@/hooks/useChatLayout'
 import { Button } from '@/components/ui/button'
@@ -29,10 +31,15 @@ export function ChatbotPage() {
     toggleQueryDetails,
     enterCompactMode,
     exitCompactMode,
+    updatePanelSizes,
     getActualWidths
   } = useChatLayout()
 
-  const { chatHistoryWidth, queryDetailsWidth, sidebarWidth } = getActualWidths()
+  const { sidebarWidth } = getActualWidths()
+  
+  // Panel refs for programmatic control
+  const leftPanelRef = useRef<ImperativePanelHandle>(null)
+  const rightPanelRef = useRef<ImperativePanelHandle>(null)
   
   // 當前查詢詳情 (最後一個 assistant 訊息)
   const currentQuery = currentMessages
@@ -63,6 +70,29 @@ export function ChatbotPage() {
     }
   }
 
+  // Sync panel collapse/expand with ResizablePanel state
+  const handleToggleChatHistory = () => {
+    if (layoutState.chatHistoryCollapsed) {
+      // Expand panel programmatically
+      leftPanelRef.current?.expand()
+    } else {
+      // Collapse panel programmatically
+      leftPanelRef.current?.collapse()
+    }
+    toggleChatHistory()
+  }
+
+  const handleToggleQueryDetails = () => {
+    if (layoutState.queryDetailsCollapsed) {
+      // Expand panel programmatically
+      rightPanelRef.current?.expand()
+    } else {
+      // Collapse panel programmatically  
+      rightPanelRef.current?.collapse()
+    }
+    toggleQueryDetails()
+  }
+
   // 鍵盤快捷鍵提示
   useEffect(() => {
     const showKeyboardShortcuts = () => {
@@ -89,72 +119,155 @@ export function ChatbotPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Chat History */}
-        {!layoutState.compactMode && (
-          <div 
-            className="flex-shrink-0 transition-all duration-300"
-            style={{ width: chatHistoryWidth }}
-          >
-            <div className="h-full flex flex-col">
-              {/* Dataset Selector */}
-              {layoutState.showDatasetSelector && (
-                <DatasetSelector
-                  datasets={[]}
-                  selectedDataset={chatState.selectedDataset}
-                  onSelectDataset={handleSelectDataset}
-                />
-              )}
-              
-              {/* Chat History */}
-              <div className="flex-1 overflow-hidden">
-                <CollapsibleChatHistory
-                  sessions={chatState.sessions}
-                  currentSession={chatState.currentSession}
-                  isCollapsed={layoutState.chatHistoryCollapsed}
-                  onToggleCollapse={toggleChatHistory}
-                  onSessionSelect={selectSession}
-                  onNewChat={createNewSession}
-                  onDeleteSession={deleteSession}
-                  onExportSession={exportSession}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Center Panel - Chat Interface */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ChatInterface
-            messages={currentMessages}
-            onSendMessage={sendMessage}
-            onRetry={retryMessage}
-            suggestedQuestions={suggestedQuestions}
-            isProcessing={chatState.isProcessing}
-            isFullscreen={layoutState.compactMode}
-            onToggleFullscreen={handleToggleFullscreen}
-          />
-        </div>
-
-        {/* Right Panel - Query Details */}
-        {!layoutState.compactMode && (
-          <div 
-            className="flex-shrink-0 transition-all duration-300"
-            style={{ width: queryDetailsWidth }}
-          >
-            <CollapsibleQueryDetails
-              currentQuery={currentQuery ? {
-                sql: currentQuery.sql!,
-                results: currentQuery.results!,
-                metadata: currentQuery.metadata!
-              } : undefined}
-              isCollapsed={layoutState.queryDetailsCollapsed}
-              onToggleCollapse={toggleQueryDetails}
-              onExportResults={handleExportResults}
-              onCreateChart={handleCreateChart}
-              onCopySQL={handleCopySQL}
+      <div className="flex-1 overflow-hidden">
+        {layoutState.compactMode ? (
+          /* Compact Mode - Single Panel */
+          <div className="h-full">
+            <ChatInterface
+              messages={currentMessages}
+              onSendMessage={sendMessage}
+              onRetry={retryMessage}
+              suggestedQuestions={suggestedQuestions}
+              isProcessing={chatState.isProcessing}
+              isFullscreen={layoutState.compactMode}
+              onToggleFullscreen={handleToggleFullscreen}
             />
           </div>
+        ) : (
+          /* Normal Mode - Resizable Panels */
+          <ResizablePanelGroup 
+            direction="horizontal" 
+            className="h-full"
+            onLayout={(sizes) => {
+              // Debounce and persist layout changes
+              const [leftSize, centerSize, rightSize] = sizes
+              if (leftSize > 5 && rightSize > 5) { // Only update if panels are not collapsed
+                updatePanelSizes(leftSize, centerSize, rightSize)
+              }
+            }}
+          >
+            {/* Left Panel - Chat History */}
+            <ResizablePanel 
+              ref={leftPanelRef}
+              defaultSize={layoutState.chatHistorySize}
+              minSize={layoutState.isMobile ? 0 : 10}
+              maxSize={layoutState.isMobile ? 100 : 45}
+              collapsible={true}
+              collapsedSize={4} // 4% when collapsed (enough for toggle button)
+              onCollapse={() => {
+                // Sync with our state when panel collapses via drag
+                if (!layoutState.chatHistoryCollapsed) {
+                  toggleChatHistory()
+                }
+              }}
+              onExpand={() => {
+                // Sync with our state when panel expands via drag
+                if (layoutState.chatHistoryCollapsed) {
+                  toggleChatHistory()
+                }
+              }}
+              onResize={(size) => {
+                // Only update sizes when not collapsed
+                if (size > 10) {
+                  const remainingSize = 100 - size
+                  const centerRatio = layoutState.centerPanelSize / (layoutState.centerPanelSize + layoutState.queryDetailsSize)
+                  const newCenterSize = remainingSize * centerRatio
+                  const newRightSize = remainingSize * (1 - centerRatio)
+                  updatePanelSizes(size, newCenterSize, newRightSize)
+                }
+              }}
+            >
+              <div className="h-full flex flex-col">
+                {/* Dataset Selector */}
+                {layoutState.showDatasetSelector && !layoutState.chatHistoryCollapsed && (
+                  <DatasetSelector
+                    datasets={[]}
+                    selectedDataset={chatState.selectedDataset}
+                    onSelectDataset={handleSelectDataset}
+                  />
+                )}
+                
+                {/* Chat History */}
+                <div className="flex-1 overflow-hidden">
+                  <CollapsibleChatHistory
+                    sessions={chatState.sessions}
+                    currentSession={chatState.currentSession}
+                    isCollapsed={layoutState.chatHistoryCollapsed}
+                    onToggleCollapse={handleToggleChatHistory}
+                    onSessionSelect={selectSession}
+                    onNewChat={createNewSession}
+                    onDeleteSession={deleteSession}
+                    onExportSession={exportSession}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Center Panel - Chat Interface */}
+            <ResizablePanel 
+              defaultSize={layoutState.centerPanelSize} 
+              minSize={30}
+            >
+              <ChatInterface
+                messages={currentMessages}
+                onSendMessage={sendMessage}
+                onRetry={retryMessage}
+                suggestedQuestions={suggestedQuestions}
+                isProcessing={chatState.isProcessing}
+                isFullscreen={layoutState.compactMode}
+                onToggleFullscreen={handleToggleFullscreen}
+              />
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Right Panel - Query Details */}
+            <ResizablePanel 
+              ref={rightPanelRef}
+              defaultSize={layoutState.queryDetailsSize}
+              minSize={layoutState.isMobile ? 0 : 10}
+              maxSize={layoutState.isMobile ? 100 : 45}
+              collapsible={true}
+              collapsedSize={4} // 4% when collapsed (enough for toggle button)
+              onCollapse={() => {
+                // Sync with our state when panel collapses via drag
+                if (!layoutState.queryDetailsCollapsed) {
+                  toggleQueryDetails()
+                }
+              }}
+              onExpand={() => {
+                // Sync with our state when panel expands via drag
+                if (layoutState.queryDetailsCollapsed) {
+                  toggleQueryDetails()
+                }
+              }}
+              onResize={(size) => {
+                // Only update sizes when not collapsed
+                if (size > 10) {
+                  const remainingSize = 100 - size
+                  const leftRatio = layoutState.chatHistorySize / (layoutState.chatHistorySize + layoutState.centerPanelSize)
+                  const newLeftSize = remainingSize * leftRatio
+                  const newCenterSize = remainingSize * (1 - leftRatio)
+                  updatePanelSizes(newLeftSize, newCenterSize, size)
+                }
+              }}
+            >
+              <CollapsibleQueryDetails
+                currentQuery={currentQuery ? {
+                  sql: currentQuery.sql!,
+                  results: currentQuery.results!,
+                  metadata: currentQuery.metadata!
+                } : undefined}
+                isCollapsed={layoutState.queryDetailsCollapsed}
+                onToggleCollapse={handleToggleQueryDetails}
+                onExportResults={handleExportResults}
+                onCreateChart={handleCreateChart}
+                onCopySQL={handleCopySQL}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
       </div>
 
@@ -164,8 +277,8 @@ export function ChatbotPage() {
           chatHistoryCollapsed={layoutState.chatHistoryCollapsed}
           queryDetailsCollapsed={layoutState.queryDetailsCollapsed}
           compactMode={layoutState.compactMode}
-          onToggleChatHistory={toggleChatHistory}
-          onToggleQueryDetails={toggleQueryDetails}
+          onToggleChatHistory={handleToggleChatHistory}
+          onToggleQueryDetails={handleToggleQueryDetails}
           onToggleCompactMode={handleToggleFullscreen}
         />
       </div>

@@ -318,11 +318,7 @@ async def get_vanna_status(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/vanna/ask")
-async def ask_vanna_direct(
-    request: VannaAskRequest,
-    current_user: User = Depends(get_current_user),
-    _: None = Depends(check_rate_limit)
-):
+async def ask_vanna_direct(request: VannaAskRequest):
     """Direct interaction with vanna.ai - ask question and get SQL + results."""
     question = request.question
     if not question or len(question.strip()) < 3:
