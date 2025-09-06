@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileSpreadsheet, Calendar, Globe, RefreshCw, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { FileSpreadsheet, Calendar, Globe, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import { formatDate, formatFileSize } from '@/lib/utils'
 interface FileCardProps {
   file: UploadedFile
   onProcessSheet: (fileId: string, sheetName: string, targetDate: string) => Promise<void>
-  onRefreshFile: (fileId: string) => Promise<void>
   onCancelJob: (jobId: string) => Promise<void>
   onDeleteFile?: (fileId: string) => void
   canProcessSheet: (fileId: string, sheetName: string) => boolean
@@ -22,24 +21,14 @@ interface FileCardProps {
 export function FileCard({ 
   file, 
   onProcessSheet, 
-  onRefreshFile, 
   onCancelJob,
   onDeleteFile,
   canProcessSheet
 }: FileCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0])
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await onRefreshFile(file.file_id)
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   const handleDeleteComplete = () => {
     if (onDeleteFile) {
@@ -97,14 +86,6 @@ export function FileCard({
 
           <div className="flex items-center space-x-2">
             {getFileStatusBadge()}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </Button>
             {onDeleteFile && (
               <Button
                 variant="ghost"

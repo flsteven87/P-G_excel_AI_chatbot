@@ -13,7 +13,6 @@ export function ExcelPage() {
   const {
     state,
     loadFiles,
-    refreshFile,
     processSheet,
     cancelJob,
     canProcessSheet,
@@ -165,7 +164,6 @@ export function ExcelPage() {
                 key={file.file_id}
                 file={file}
                 onProcessSheet={handleProcessSheet}
-                onRefreshFile={async () => { await refreshFile(file.file_id) }}
                 onCancelJob={handleCancelJob}
                 onDeleteFile={async () => {
                   await loadFiles()

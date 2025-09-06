@@ -281,5 +281,10 @@ docs
 *.xls
 *.csv
 
+# Vanna.ai ChromaDB database files
+backend/vanna_db/
+vanna_db/
+*.sqlite3
+
 for_reference
 INITIAL.md
