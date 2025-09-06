@@ -6,6 +6,7 @@ import asyncio
 import logging
 from typing import Any
 
+import asyncpg
 import pandas as pd
 from fastapi import HTTPException, status
 from tenacity import (
@@ -55,7 +56,7 @@ class VannaService:
         """Initialize VannaService with configuration."""
         self.model_name = settings.vanna_model_name or "excel-chatbot"
         self.openai_api_key = settings.openai_api_key or settings.vanna_api_key
-        self._client: VannaAI | None = None
+        self._client: ProfessionalVannaAI | None = None
         self._initialized = False
         self.database_url = settings.database_url
 
@@ -91,9 +92,6 @@ class VannaService:
                 lambda: ProfessionalVannaAI(config=config)
             )
 
-            # Connect to PostgreSQL database if URL is available
-            if self.database_url:
-                await self._connect_to_database()
 
             # Apply professional P&G business context training
             try:
@@ -130,39 +128,8 @@ class VannaService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Vanna.ai initialization failed: {str(e)}"
-            )
+            ) from e
 
-    async def _connect_to_database(self) -> None:
-        """Connect vanna to the PostgreSQL database."""
-        if not self._client or not self.database_url:
-            return
-
-        try:
-            # Parse database URL components for PostgreSQL connection
-            # DATABASE_URL format: postgresql://user:password@host:port/dbname
-            import urllib.parse as urlparse
-
-            parsed = urlparse.urlparse(self.database_url)
-
-            connection_params = {
-                'host': parsed.hostname,
-                'dbname': parsed.path.lstrip('/'),
-                'user': parsed.username,
-                'password': parsed.password,
-                'port': parsed.port or 5432
-            }
-
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                lambda: self._client.connect_to_postgres(**connection_params)
-            )
-
-            logger.info("Successfully connected vanna to PostgreSQL database")
-
-        except Exception as e:
-            logger.error(f"Failed to connect vanna to database: {e}")
-            # Don't raise exception - vanna can work without direct DB connection
 
     async def get_training_data_summary(self) -> dict[str, Any]:
         """Get summary of current training data."""
@@ -221,7 +188,7 @@ class VannaService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Training failed: {str(e)}"
-            )
+            ) from e
 
     @retry(
         stop=stop_after_attempt(3),
@@ -253,7 +220,7 @@ class VannaService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Training failed: {str(e)}"
-            )
+            ) from e
 
     @retry(
         stop=stop_after_attempt(3),
@@ -285,7 +252,7 @@ class VannaService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Training failed: {str(e)}"
-            )
+            ) from e
 
     @retry(
         stop=stop_after_attempt(3),
@@ -323,7 +290,7 @@ class VannaService:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Could not generate SQL query: {str(e)}"
-            )
+            ) from e
 
     @retry(
         stop=stop_after_attempt(2),
@@ -367,7 +334,7 @@ class VannaService:
             return {
                 "question": question,
                 "sql": sql,
-                "results": df.to_dict('records') if (hasattr(df, 'empty') and not df.empty) else [],
+                "data": df.to_dict('records') if (hasattr(df, 'empty') and not df.empty) else [],
                 "row_count": len(df) if hasattr(df, '__len__') else 0,
                 "columns": list(df.columns) if (hasattr(df, 'columns') and hasattr(df, 'empty') and not df.empty) else [],
                 "status": "success"
@@ -399,7 +366,7 @@ class VannaService:
         if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
             raise ValueError("Only SELECT and WITH queries are allowed")
 
-        # Add LIMIT if not present
+        # Add LIMIT if not present (keep existing LIMIT if present)
         if 'LIMIT' not in sql_upper:
             if sql.endswith(';'):
                 sql = sql[:-1] + f' LIMIT {settings.default_query_limit};'
@@ -513,51 +480,16 @@ class VannaService:
         return questions
 
     async def _execute_sql_via_supabase(self, sql: str) -> pd.DataFrame:
-        """Execute SQL via Supabase client library."""
-        try:
-            from supabase import create_client
+        """Execute SQL directly via PostgreSQL connection."""
+        conn = await asyncpg.connect(self.database_url)
+        records = await conn.fetch(sql)
+        await conn.close()
 
-            logger.info(f"Executing SQL via Supabase: {sql[:100]}...")
-
-            supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
-
-            # Execute via RPC function (requires creating a safe SQL execution function in Supabase)
-            try:
-                # Attempt to use a PostgreSQL function for safe SQL execution
-                # This would need to be created in Supabase as an RPC function
-                result = supabase.rpc('execute_safe_sql', {'query': sql}).execute()
-
-                if result.data:
-                    return pd.DataFrame(result.data)
-                else:
-                    return pd.DataFrame()
-
-            except Exception:
-                # Fallback: Use direct table access for simple queries
-                # This is a simplified approach - in production you'd create proper RPC functions
-                logger.warning("RPC execution failed, using table access fallback")
-
-                # Simple product inventory query fallback
-                if "product_id" in sql.lower() and "qty" in sql.lower():
-                    result = supabase.table('tw_fact_inventory_snapshot')\
-                        .select('product_id, qty')\
-                        .limit(100)\
-                        .execute()
-
-                    if result.data:
-                        df = pd.DataFrame(result.data)
-                        # Apply basic aggregation if needed
-                        if "sum" in sql.lower():
-                            aggregated = df.groupby('product_id')['qty'].sum().reset_index()
-                            aggregated.columns = ['product_id', 'total_qty']
-                            return aggregated.sort_values('total_qty', ascending=False).head(10)
-                        return df
-
-                return pd.DataFrame()
-
-        except Exception as e:
-            logger.error(f"Supabase SQL execution failed: {e}")
-            raise
+        if records:
+            result_list = [dict(record) for record in records]
+            return pd.DataFrame(result_list)
+        else:
+            return pd.DataFrame()
 
 
 

@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react'
 import { 
   Send, 
   RotateCcw, 
-  Copy, 
   TrendingUp, 
   Loader2,
   Maximize2,
@@ -80,9 +79,6 @@ export function ChatInterface({
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-  }
 
   return (
     <div className={cn('flex flex-col h-full relative', className)}>
@@ -174,7 +170,6 @@ export function ChatInterface({
               key={message.id}
               message={message}
               onRetry={onRetry}
-              onCopy={copyToClipboard}
               isFullscreen={isFullscreen}
             />
           ))
@@ -287,11 +282,10 @@ export function ChatInterface({
 interface MessageBubbleProps {
   message: ChatMessage
   onRetry: (messageId: string) => void
-  onCopy: (text: string) => void
   isFullscreen?: boolean
 }
 
-function MessageBubble({ message, onRetry, onCopy, isFullscreen }: MessageBubbleProps) {
+function MessageBubble({ message, onRetry, isFullscreen }: MessageBubbleProps) {
   const isUser = message.type === 'user'
   const isError = message.type === 'error'
 
@@ -316,28 +310,6 @@ function MessageBubble({ message, onRetry, onCopy, isFullscreen }: MessageBubble
           </p>
         </div>
 
-        {/* SQL Query Display */}
-        {message.sql && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">生成的 SQL：</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onCopy(message.sql!)}
-                className="h-6 w-6 p-0"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-            <pre className={cn(
-              'bg-background/50 rounded p-3 overflow-x-auto font-mono',
-              isFullscreen ? 'text-sm' : 'text-xs'
-            )}>
-              <code>{message.sql}</code>
-            </pre>
-          </div>
-        )}
 
         {/* Query Results Preview */}
         {message.results && (

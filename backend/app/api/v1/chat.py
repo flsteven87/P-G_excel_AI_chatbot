@@ -338,7 +338,7 @@ async def ask_vanna_direct(request: VannaAskRequest):
         return {
             "question": result["question"],
             "sql": result["sql"],
-            "results": result["results"],
+            "results": result["data"],
             "row_count": result["row_count"],
             "columns": result["columns"],
             "processing_time_ms": processing_time,
