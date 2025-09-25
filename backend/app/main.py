@@ -84,7 +84,7 @@ app.add_middleware(
 if settings.environment == "production":
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["*.supabase.co", "localhost", "127.0.0.1"]
+        allowed_hosts=["*.supabase.co", "*.zeabur.app", "localhost", "127.0.0.1"]
     )
 
 
