@@ -255,7 +255,7 @@ class QueryService:
                         try:
                             pd.to_datetime(value)
                             date_columns.append(col)
-                        except:
+                        except (ValueError, TypeError):
                             text_columns.append(col)
 
         # Generate suggestions based on data structure

@@ -160,7 +160,6 @@ class FileRepository(SupabaseRepository):
         if data.get("sheets_data"):
             for i, sheet_data in enumerate(data["sheets_data"]):
                 try:
-                    logger.debug(f"處理第 {i+1} 個工作表資料: {sheet_data.keys()}")
 
                     # ✅ 安全的資料類型檢查和轉換
                     safe_sheet_data = {
@@ -177,7 +176,6 @@ class FileRepository(SupabaseRepository):
                     }
 
                     sheets.append(SheetInfo(**safe_sheet_data))
-                    logger.debug(f"✅ 工作表 {safe_sheet_data['sheet_name']} 構造成功")
 
                 except Exception as e:
                     logger.error(f"❌ 構造第 {i+1} 個 SheetInfo 失敗: {e}")
@@ -209,12 +207,10 @@ class FileRepository(SupabaseRepository):
     def _safe_int_convert(self, value: Any, field_name: str) -> int:
         """安全的整數轉換"""
         if value is None:
-            logger.debug(f"{field_name} 為 None，使用預設值 0")
             return 0
 
         try:
             result = int(value)
-            logger.debug(f"{field_name} 轉換成功: {value} -> {result}")
             return max(0, result)
         except (ValueError, TypeError) as e:
             logger.warning(f"{field_name} 轉換失敗: {value} ({type(value)}), 錯誤: {e}")

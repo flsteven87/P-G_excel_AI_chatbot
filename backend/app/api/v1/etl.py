@@ -215,7 +215,7 @@ async def cancel_etl_job(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"取消工作失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/validate", response_model=ETLValidationResult)
@@ -270,7 +270,7 @@ async def validate_file_only(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"檔案驗證失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/statistics", response_model=ETLStatistics)
@@ -297,7 +297,7 @@ async def get_etl_statistics(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"取得統計資訊失敗: {str(e)}"
-        )
+        ) from e
 
 
 # File Management Endpoints for Multi-Step Upload Flow
@@ -318,7 +318,7 @@ async def list_uploaded_files(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"取得檔案列表失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/upload-file", response_model=UploadedFileInfo, status_code=HTTP_201_CREATED)
@@ -362,7 +362,7 @@ async def upload_file_only(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"檔案上傳失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/files/{file_id}", response_model=UploadedFileInfo)
@@ -389,7 +389,7 @@ async def get_file_info(
         raise HTTPException(
             status_code=HTTP_404_NOT_FOUND,
             detail=f"找不到檔案: {file_id}"
-        )
+        ) from e
 
 
 @router.get("/files/{file_id}/analyze", response_model=FileAnalysisResult)
@@ -415,7 +415,7 @@ async def analyze_file_sheets(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"檔案分析失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/files/{file_id}/validate")
@@ -481,7 +481,7 @@ async def validate_file_sheets(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"工作表驗證失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/files/{file_id}/confirm", response_model=UploadedFileInfo)
@@ -507,7 +507,7 @@ async def confirm_file_upload(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"確認檔案上傳失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.post("/files/{file_id}/sheets/{sheet_name}/process", response_model=ETLJobResponse)
@@ -561,7 +561,7 @@ async def process_individual_sheet(
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,
             detail=f"處理工作表失敗: {str(e)}"
-        )
+        ) from e
 
 
 @router.get("/health")

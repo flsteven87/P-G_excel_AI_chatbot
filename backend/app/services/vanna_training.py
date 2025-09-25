@@ -151,10 +151,10 @@ class VannaTrainingService:
         return [
             (
                 "顯示庫存量前10的產品",
-                """SELECT 
-                    dp.sku, 
-                    dp.descr, 
-                    dp.brand_name, 
+                """SELECT
+                    dp.sku,
+                    dp.descr,
+                    dp.brand_name,
                     SUM(f.qty) as total_qty
                 FROM tw_fact_inventory_snapshot f
                 JOIN tw_dim_product dp ON dp.product_id = f.product_id
@@ -165,7 +165,7 @@ class VannaTrainingService:
             ),
             (
                 "按品牌統計總庫存量",
-                """SELECT 
+                """SELECT
                     dp.brand_name,
                     COUNT(DISTINCT dp.sku) as product_count,
                     SUM(f.qty) as total_qty
@@ -177,7 +177,7 @@ class VannaTrainingService:
             ),
             (
                 "哪些產品庫存不足100件",
-                """SELECT 
+                """SELECT
                     dp.sku,
                     dp.descr,
                     dp.brand_name,
@@ -191,7 +191,7 @@ class VannaTrainingService:
             ),
             (
                 "各倉庫的總庫存量",
-                """SELECT 
+                """SELECT
                     dl.facility_code,
                     dl.facility_name,
                     COUNT(DISTINCT f.product_id) as product_types,
@@ -204,7 +204,7 @@ class VannaTrainingService:
             ),
             (
                 "即將停出貨的產品(14天內)",
-                """SELECT 
+                """SELECT
                     dp.sku,
                     dp.descr,
                     dp.brand_name,
@@ -221,10 +221,10 @@ class VannaTrainingService:
             ),
             (
                 "顯示所有產品的平均庫存",
-                """SELECT 
+                """SELECT
                     AVG(total_qty) as avg_inventory
                 FROM (
-                    SELECT 
+                    SELECT
                         SUM(f.qty) as total_qty
                     FROM tw_fact_inventory_snapshot f
                     WHERE f.snapshot_date = (SELECT MAX(snapshot_date) FROM tw_fact_inventory_snapshot)
@@ -233,7 +233,7 @@ class VannaTrainingService:
             ),
             (
                 "庫存價值最高的前5個品牌",
-                """SELECT 
+                """SELECT
                     dp.brand_name,
                     COUNT(DISTINCT dp.sku) as sku_count,
                     SUM(f.qty) as total_qty,
@@ -248,7 +248,7 @@ class VannaTrainingService:
             ),
             (
                 "哪些產品有分配但未出貨",
-                """SELECT 
+                """SELECT
                     dp.sku,
                     dp.descr,
                     SUM(f.qty_allocated) as allocated_qty,

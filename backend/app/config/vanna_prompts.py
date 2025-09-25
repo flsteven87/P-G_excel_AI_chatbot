@@ -20,7 +20,7 @@ class VannaPromptConfig:
 
 維度表 (Dimension Tables):
 - tw_dim_product: 產品維度 (sku, descr, brand_name, skugroup_name, ean, itf14)
-- tw_dim_location: 地點維度 (facility_code, loc_code, sloc_code, facility_name)  
+- tw_dim_location: 地點維度 (facility_code, loc_code, sloc_code, facility_name)
 - tw_dim_lot: 批號維度 (lot_code, manf_date, dc_stop_ship_date, shelf_life_days, reason_code)
 
 預建分析視圖 (優先使用):
@@ -59,7 +59,7 @@ class VannaPromptConfig:
 
 **核心業務概念**：
 - qty = 實體庫存量 (總計 1046 萬件)
-- qty_allocated = 已分配但未出貨量 (21.3 萬件)  
+- qty_allocated = 已分配但未出貨量 (21.3 萬件)
 - available_qty = 可用庫存 = qty - qty_allocated
 - bqty = 基礎庫存單位量 (187 萬件)
 - case_cnt = 包裝箱數 (22 萬箱)
@@ -90,9 +90,9 @@ class VannaPromptConfig:
         return [
             {
                 "question": "顯示庫存量前10的產品",
-                "sql": """SELECT 
+                "sql": """SELECT
                     dp.sku as product_code,
-                    dp.descr as product_description, 
+                    dp.descr as product_description,
                     dp.brand_name as brand,
                     SUM(f.qty) as inventory_qty,
                     SUM(f.qty - COALESCE(f.qty_allocated, 0)) as available_qty
@@ -105,7 +105,7 @@ class VannaPromptConfig:
             },
             {
                 "question": "按品牌統計總庫存量",
-                "sql": """SELECT 
+                "sql": """SELECT
                     brand_name as brand,
                     sku_count as product_count,
                     total_qty as inventory_qty,
@@ -117,7 +117,7 @@ class VannaPromptConfig:
             },
             {
                 "question": "即將停出貨的產品有哪些",
-                "sql": """SELECT 
+                "sql": """SELECT
                     sku,
                     descr,
                     brand_name,
@@ -132,7 +132,7 @@ class VannaPromptConfig:
             },
             {
                 "question": "各倉庫的庫存統計",
-                "sql": """SELECT 
+                "sql": """SELECT
                     facility_code as warehouse_code,
                     facility_name as warehouse_name,
                     product_count,
@@ -144,36 +144,36 @@ class VannaPromptConfig:
             },
             {
                 "question": "庫存異常檢測",
-                "sql": """SELECT 
+                "sql": """SELECT
                     anomaly_type,
                     sku,
                     brand_name,
                     facility_code,
                     qty,
                     qty_allocated,
-                    CASE 
+                    CASE
                         WHEN anomaly_type = 'over_allocated' THEN over_allocated
-                        ELSE NULL 
+                        ELSE NULL
                     END as over_allocated_amount,
                     description
                 FROM tw_vw_inventory_anomaly
-                ORDER BY 
-                    CASE anomaly_type 
-                        WHEN 'negative_stock' THEN 1 
+                ORDER BY
+                    CASE anomaly_type
+                        WHEN 'negative_stock' THEN 1
                         WHEN 'over_allocated' THEN 2
-                        ELSE 3 
+                        ELSE 3
                     END;"""
             },
             {
                 "question": "產品群組分析",
-                "sql": """SELECT 
+                "sql": """SELECT
                     skugroup_name as product_group,
                     brand_name as brand,
                     sku_count as product_count,
                     total_qty as inventory_qty,
                     avg_qty_per_sku as avg_inventory_per_product,
                     zero_stock_count as out_of_stock_count
-                FROM tw_vw_skugroup_analysis  
+                FROM tw_vw_skugroup_analysis
                 WHERE skugroup_name IS NOT NULL
                 ORDER BY inventory_qty DESC;"""
             }
@@ -186,12 +186,12 @@ class VannaPromptConfig:
 
 **查詢策略優先級**：
 1. 🎯 優先使用預建視圖：tw_vw_brand_summary, tw_vw_facility_summary 等
-2. 🔍 次選最新快照：tw_vw_inventory_latest (避免手寫日期篩選)  
+2. 🔍 次選最新快照：tw_vw_inventory_latest (避免手寫日期篩選)
 3. 🏗️ 最後選擇事實表：tw_fact_inventory_snapshot (需要複雜 JOIN)
 
 **查詢類型模板**：
 - 品牌分析 → 使用 tw_vw_brand_summary
-- 倉庫分析 → 使用 tw_vw_facility_summary  
+- 倉庫分析 → 使用 tw_vw_facility_summary
 - 產品排行 → 使用 tw_vw_inventory_latest + tw_dim_product JOIN
 - 即期預警 → 使用 tw_vw_expiry_alert
 - 異常檢測 → 使用 tw_vw_inventory_anomaly
@@ -206,7 +206,7 @@ class VannaPromptConfig:
 **語意對應邏輯**：
 - "庫存量最高" = ORDER BY total_qty DESC
 - "品牌排行" = 使用 tw_vw_brand_summary
-- "倉庫效率" = 使用 tw_vw_facility_summary  
+- "倉庫效率" = 使用 tw_vw_facility_summary
 - "即期/快過期" = 使用 tw_vw_expiry_alert + days_until_stop
 - "異常/問題" = 使用 tw_vw_inventory_anomaly
 - "缺貨/不足" = WHERE available_qty < 設定值

@@ -37,7 +37,8 @@ export function SheetETLControl({
     if (canProcess) {
       try {
         await onProcess(fileId, sheet.sheet_name, targetDate)
-      } catch (error) {
+      } catch {
+        // Error handling is done by the parent component
       }
     }
   }

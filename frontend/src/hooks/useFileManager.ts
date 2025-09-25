@@ -56,7 +56,8 @@ export function useFileManager() {
       }))
       
       return updatedFile
-    } catch (error) {
+    } catch {
+      // Error handled by parent component
     }
   }, [])
 

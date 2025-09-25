@@ -63,7 +63,6 @@ class SupabaseRepository(Generic[T]):
 
             # ✅ 增強 RPC 呼叫的結果處理
             if is_rpc_call:
-                logger.debug(f"RPC 結果處理: data={data}, type={type(data)}")
 
                 # 處理 RPC 錯誤情況
                 if isinstance(data, dict):

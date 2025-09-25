@@ -107,7 +107,7 @@ export function useETL() {
         } else {
           monitoringJobsRef.current.delete(jobId)
         }
-      } catch (error) {
+      } catch {
         monitoringJobsRef.current.delete(jobId)
       }
     }
@@ -151,7 +151,8 @@ export function useETL() {
       }))
       
       return updatedJob
-    } catch (error) {
+    } catch {
+      // Error handled by parent component
     }
   }, [])
 
