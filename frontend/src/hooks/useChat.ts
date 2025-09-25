@@ -97,8 +97,9 @@ export function useChat() {
     }))
 
     try {
-      // 調用後端 API (使用 Vite 代理)
-      const response = await fetch('/api/v1/chat/vanna/ask', {
+      // 調用後端 API
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+      const response = await fetch(`${apiUrl}/api/v1/chat/vanna/ask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

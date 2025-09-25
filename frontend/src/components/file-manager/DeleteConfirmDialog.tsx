@@ -33,7 +33,8 @@ export function DeleteConfirmDialog({
       setIsDeleting(true)
       setError(null)
       
-      const response = await fetch(`http://localhost:8001/api/v1/files/${file.file_id}/hard-delete`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+      const response = await fetch(`${apiUrl}/api/v1/files/${file.file_id}/hard-delete`, {
         method: 'DELETE'
       })
       
